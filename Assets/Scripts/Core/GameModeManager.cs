@@ -31,12 +31,7 @@ public class GameModeManager : MonoBehaviour
 
     private void Update()
     {
-        if (scrollTogglesMode)
-        {
-            float s = Input.mouseScrollDelta.y;
-            if (s != 0f)
-                SetMode(Mode == GameMode.Combat ? GameMode.Build : GameMode.Combat);
-        }
+
 
         if (Input.GetKeyDown(forceBuildKey))
             SetMode(GameMode.Build);
