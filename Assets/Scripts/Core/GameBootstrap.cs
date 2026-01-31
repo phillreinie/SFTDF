@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// CHANGED: V2-0
+using UnityEngine;
 
 public class GameBootstrap : MonoBehaviour
 {
@@ -23,9 +24,18 @@ public class GameBootstrap : MonoBehaviour
 
         GameServices.Inventory = new InventoryService();
         GameServices.Inventory.Add(scrapResourceId, startingScrap);
-        
+
         GameServices.Rates = new EconomyRateTracker(10f);
-        
+
+        // NEW: Capacity service (must exist before production ticks clamp to caps)
+        GameServices.Capacity = new ResourceCapacityService();
+
+        // Optional: ensure UI refresh hooks when capacity changes
+        GameServices.Capacity.OnCapacityChanged += () =>
+        {
+            // Amounts may not change, but caps do — we still want UI to update if it listens to inventory changes.
+            GameServices.Inventory?.NotifyChanged();
+        };
 
         gridManager.Init();
     }

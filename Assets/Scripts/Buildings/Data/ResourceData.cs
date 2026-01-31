@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// CHANGED: V2-0
+using UnityEngine;
 
 [CreateAssetMenu(menuName = "Game/Resources/Resource")]
 public class ResourceData : ScriptableObject
@@ -11,4 +12,8 @@ public class ResourceData : ScriptableObject
     [Header("UI")]
     public Sprite icon;
     public Color uiColor = Color.white;
+
+    [Header("V2-0: Capacity")]
+    [Tooltip("Base storage cap for this resource before Storage buildings add bonus.")]
+    public int baseCap = 200;
 }

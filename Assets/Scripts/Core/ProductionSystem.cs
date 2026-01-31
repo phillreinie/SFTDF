@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿// CHANGED: V2-0
+using UnityEngine;
 
 public class ProductionSystem : MonoBehaviour
 {
@@ -31,7 +32,8 @@ public class ProductionSystem : MonoBehaviour
             var b = all[i];
             if (b == null || b.data == null) continue;
 
-            if (b.data.category == BuildingCategory.Producer && b.data is ProducerData pd)
+            // V2-0: tick ANY ProducerData, regardless of category (Power buildings can now produce too).
+            if (b.data is ProducerData pd)
                 TickProducer(b, pd, dt);
         }
     }
@@ -45,7 +47,7 @@ public class ProductionSystem : MonoBehaviour
             return;
         }
 
-        // Power gating
+        // Power gating (still a gate for now; later power becomes resource consumption)
         if (b.data.powerDraw > 0 && !b.isPowered)
         {
             b.productionState = ProductionState.Inactive;
@@ -59,34 +61,65 @@ public class ProductionSystem : MonoBehaviour
             return;
         }
 
-        // If we reach here, building is in a valid producing condition
+        // Output capacity gating (1-cycle feasibility)
+        if (!HasOutputSpaceForOneCycle(pd))
+        {
+            b.productionState = ProductionState.Blocked;
+            return;
+        }
+
+        // Valid producing condition
         b.productionState = ProductionState.Running;
 
-        // Normal milestone-3 cycle ticking
         b.productionCycleAccum += pd.cyclesPerSecond * dt;
 
         int requestedCycles = Mathf.FloorToInt(b.productionCycleAccum);
         if (requestedCycles <= 0) return;
 
         int executed = 0;
+        bool blockedByCap = false;
+
         for (int i = 0; i < requestedCycles; i++)
         {
-            if (!TryExecuteRecipeCycle(pd)) break;
-            executed++;
+            var result = TryExecuteRecipeCycle(pd);
+            if (result == CycleResult.Success)
+            {
+                executed++;
+                continue;
+            }
+
+            if (result == CycleResult.Blocked)
+                blockedByCap = true;
+
+            break;
         }
 
-        if (executed <= 0) return;
+        if (executed <= 0)
+        {
+            // If we couldn't execute at all and it's due to cap => Blocked
+            if (blockedByCap || !HasOutputSpaceForOneCycle(pd))
+                b.productionState = ProductionState.Blocked;
+
+            return;
+        }
 
         b.productionCycleAccum -= executed;
 
         float cyclesPerSecondApplied = executed / dt;
         ApplyRates(pd, cyclesPerSecondApplied);
+
+        // If we executed some cycles but then hit cap, we can optionally show Blocked.
+        // Keeping it as Running is also acceptable. For clarity, we flip to Blocked if now full.
+        if (!HasOutputSpaceForOneCycle(pd))
+            b.productionState = ProductionState.Blocked;
     }
 
+    private enum CycleResult { Success, Starved, Blocked }
 
-    private bool TryExecuteRecipeCycle(ProducerData pd)
+    private CycleResult TryExecuteRecipeCycle(ProducerData pd)
     {
         var inv = GameServices.Inventory;
+        if (inv == null) return CycleResult.Starved;
 
         var inputs = pd.recipe != null ? pd.recipe.inputs : null;
         var outputs = pd.recipe != null ? pd.recipe.outputs : null;
@@ -98,7 +131,18 @@ public class ProductionSystem : MonoBehaviour
             {
                 var ra = inputs[i];
                 if (inv.Get(ra.resourceId) < ra.amount)
-                    return false;
+                    return CycleResult.Starved;
+            }
+        }
+
+        // Check output space BEFORE consuming inputs (important!)
+        if (outputs != null)
+        {
+            for (int i = 0; i < outputs.Count; i++)
+            {
+                var ra = outputs[i];
+                if (!inv.CanAdd(ra.resourceId, ra.amount))
+                    return CycleResult.Blocked;
             }
         }
 
@@ -109,11 +153,11 @@ public class ProductionSystem : MonoBehaviour
             {
                 var ra = inputs[i];
                 if (!inv.TryConsume(ra.resourceId, ra.amount))
-                    return false;
+                    return CycleResult.Starved;
             }
         }
 
-        // Produce outputs
+        // Produce outputs (Inventory clamps, but we already ensured space)
         if (outputs != null)
         {
             for (int i = 0; i < outputs.Count; i++)
@@ -123,7 +167,7 @@ public class ProductionSystem : MonoBehaviour
             }
         }
 
-        return true;
+        return CycleResult.Success;
     }
 
     private void ApplyRates(ProducerData pd, float cyclesPerSecondApplied)
@@ -151,10 +195,12 @@ public class ProductionSystem : MonoBehaviour
             }
         }
     }
-    
+
     private bool HasAllInputs(ProducerData pd)
     {
         var inv = GameServices.Inventory;
+        if (inv == null) return false;
+
         var inputs = pd.recipe != null ? pd.recipe.inputs : null;
 
         if (inputs == null || inputs.Count == 0)
@@ -164,6 +210,24 @@ public class ProductionSystem : MonoBehaviour
         {
             var ra = inputs[i];
             if (inv.Get(ra.resourceId) < ra.amount)
+                return false;
+        }
+
+        return true;
+    }
+
+    private bool HasOutputSpaceForOneCycle(ProducerData pd)
+    {
+        var inv = GameServices.Inventory;
+        if (inv == null) return false;
+
+        var outputs = pd.recipe != null ? pd.recipe.outputs : null;
+        if (outputs == null || outputs.Count == 0) return true;
+
+        for (int i = 0; i < outputs.Count; i++)
+        {
+            var ra = outputs[i];
+            if (!inv.CanAdd(ra.resourceId, ra.amount))
                 return false;
         }
 
