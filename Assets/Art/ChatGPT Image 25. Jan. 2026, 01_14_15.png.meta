@@ -96,7 +96,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 80
+  spritePixelsToUnits: 100
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -509,23 +509,7 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable:
-      ChatGPT Image 25. Jan. 2026, 01_14_15_0: 8195464667032226426
-      ChatGPT Image 25. Jan. 2026, 01_14_15_1: 2554240844650536841
-      ChatGPT Image 25. Jan. 2026, 01_14_15_10: -1655526306454945967
-      ChatGPT Image 25. Jan. 2026, 01_14_15_11: 6283743289503451541
-      ChatGPT Image 25. Jan. 2026, 01_14_15_12: 4465334607054691217
-      ChatGPT Image 25. Jan. 2026, 01_14_15_13: 6291538757378723524
-      ChatGPT Image 25. Jan. 2026, 01_14_15_14: 4408260199093942158
-      ChatGPT Image 25. Jan. 2026, 01_14_15_15: -4868594441827134254
-      ChatGPT Image 25. Jan. 2026, 01_14_15_2: 9025353847045200432
-      ChatGPT Image 25. Jan. 2026, 01_14_15_3: -7567219920816566214
-      ChatGPT Image 25. Jan. 2026, 01_14_15_4: -3933274132688445127
-      ChatGPT Image 25. Jan. 2026, 01_14_15_5: 6869667131081607595
-      ChatGPT Image 25. Jan. 2026, 01_14_15_6: 3928719615021010138
-      ChatGPT Image 25. Jan. 2026, 01_14_15_7: -1555219740360934028
-      ChatGPT Image 25. Jan. 2026, 01_14_15_8: 3417861904615113208
-      ChatGPT Image 25. Jan. 2026, 01_14_15_9: -2545551316109131240
+    nameFileIdTable: {}
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

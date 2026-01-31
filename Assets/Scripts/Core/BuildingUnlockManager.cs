@@ -17,6 +17,10 @@ public class BuildingUnlockManager : MonoBehaviour
     [Tooltip("Every N unlocks, advance to next tier pool (if available).")]
     public int unlocksPerTier = 3;
 
+    [Header("Start Unlocks")]
+    [Tooltip("If true, consider buildings already in hotbar as unlocked (recommended).")]
+    public bool seedUnlockedFromHotbar = true;
+
     private float _timer;
     private int _unlockCountTotal;
 
@@ -25,6 +29,15 @@ public class BuildingUnlockManager : MonoBehaviour
     private void Start()
     {
         _timer = unlockEveryMinutes * 60f;
+
+        if (seedUnlockedFromHotbar && hotbar != null && hotbar.buildings != null)
+        {
+            for (int i = 0; i < hotbar.buildings.Count; i++)
+            {
+                var b = hotbar.buildings[i];
+                if (b != null) _unlocked.Add(b);
+            }
+        }
     }
 
     private void Update()
@@ -42,41 +55,21 @@ public class BuildingUnlockManager : MonoBehaviour
 
     private void TryUnlockOne()
     {
-        if (hotbar.IsFull())
-            return; // V1: just stop adding when full
-
         int tierIndex = Mathf.Min(tierPools.Count - 1, _unlockCountTotal / Mathf.Max(1, unlocksPerTier));
-        var pool = tierPools[tierIndex];
-        if (pool == null || pool.candidates == null || pool.candidates.Count == 0) return;
 
-        // Build list of available candidates (not yet unlocked)
-        var available = new List<BuildingData>();
-        for (int i = 0; i < pool.candidates.Count; i++)
+        // Find first tier (from current upwards) that still has an available candidate
+        List<BuildingData> available = null;
+
+        for (int t = tierIndex; t < tierPools.Count; t++)
         {
-            var b = pool.candidates[i];
-            if (b == null) continue;
-            if (_unlocked.Contains(b)) continue;
-            available.Add(b);
+            var pool = tierPools[t];
+            if (pool == null || pool.candidates == null || pool.candidates.Count == 0) continue;
+
+            available = BuildAvailable(pool);
+            if (available.Count > 0) break;
         }
 
-        // If current tier exhausted, try higher tiers (optional fallback)
-        int fallbackIndex = tierIndex;
-        while (available.Count == 0 && fallbackIndex < tierPools.Count - 1)
-        {
-            fallbackIndex++;
-            pool = tierPools[fallbackIndex];
-            if (pool == null) continue;
-
-            for (int i = 0; i < pool.candidates.Count; i++)
-            {
-                var b = pool.candidates[i];
-                if (b == null) continue;
-                if (_unlocked.Contains(b)) continue;
-                available.Add(b);
-            }
-        }
-
-        if (available.Count == 0) return;
+        if (available == null || available.Count == 0) return;
 
         var picked = available[Random.Range(0, available.Count)];
         _unlocked.Add(picked);
@@ -85,5 +78,18 @@ public class BuildingUnlockManager : MonoBehaviour
         hotbar.AddBuilding(picked);
 
         Debug.Log($"[Unlock] Unlocked {picked.displayName} (Tier {picked.tier})");
+    }
+
+    private List<BuildingData> BuildAvailable(BuildingPoolData pool)
+    {
+        var list = new List<BuildingData>();
+        for (int i = 0; i < pool.candidates.Count; i++)
+        {
+            var b = pool.candidates[i];
+            if (b == null) continue;
+            if (_unlocked.Contains(b)) continue;
+            list.Add(b);
+        }
+        return list;
     }
 }

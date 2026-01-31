@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 public class BuildController : MonoBehaviour
 {
@@ -15,7 +16,11 @@ public class BuildController : MonoBehaviour
     private bool _buildMode;
     private BuildingRuntime _ghost;
     private SpriteRenderer _ghostSR;
+    private RadiusRingRenderer _ghostRing;
+    
     private Camera _cam;
+    private readonly List<BuildingHighlight> _activeHighlights = new();
+
 
     private void Awake()
     {
@@ -28,6 +33,7 @@ public class BuildController : MonoBehaviour
         {
             _ghost = Instantiate(ghostPrefab);
             _ghostSR = _ghost.GetComponentInChildren<SpriteRenderer>();
+            _ghostRing = _ghost.GetComponentInChildren<RadiusRingRenderer>(true);
             _ghost.gameObject.SetActive(false);
         }
     }
@@ -68,6 +74,9 @@ public class BuildController : MonoBehaviour
 
         // Ghost sprite: match selected building runtime sprite if possible
         ApplyGhostSprite(selectedBuilding);
+        ApplyGhostRadius(selectedBuilding);
+        UpdatePlacementHighlights(cell);
+
 
         // Tint feedback
         if (_ghostSR != null)
@@ -80,6 +89,8 @@ public class BuildController : MonoBehaviour
             {
                 // After placing, clear selection + return to combat
                 ClearSelection();
+                ClearHighlights();
+
                 GameModeManager.Instance?.SetMode(GameMode.Combat);
             }
             else
@@ -103,6 +114,7 @@ public class BuildController : MonoBehaviour
                 // cancel placement
                 ClearSelection();
                 GameModeManager.Instance?.SetMode(GameMode.Combat);
+                ClearHighlights();
             }
         }
     }
@@ -172,5 +184,96 @@ public class BuildController : MonoBehaviour
         BuildSelectionEvents.OnSelectedChanged?.Invoke(selectedBuilding);
         UpdateGhostVisibility();
     }
+    
+    private void ApplyGhostRadius(BuildingData data)
+    {
+        if (_ghostRing == null || data == null) return;
+
+        float r = 0f;
+        if (data is StorageData sd) r = sd.linkRadiusTiles;
+        else if (data is PowerData pd) r = pd.powerRadiusTiles;
+        else if (data is DefenseTowerData td) r = td.combat.rangeTiles;
+        else r = data.radiusTiles;
+
+        if (r <= 0.01f)
+        {
+            _ghostRing.SetVisible(false);
+            return;
+        }
+
+        _ghostRing.SetVisible(true);
+        _ghostRing.SetRadiusTiles(r);
+    }
+    
+    private void ClearHighlights()
+    {
+        for (int i = 0; i < _activeHighlights.Count; i++)
+            _activeHighlights[i]?.Set(false);
+
+        _activeHighlights.Clear();
+    }
+    
+    private void UpdatePlacementHighlights(Vector2Int originCell)
+    {
+        ClearHighlights();
+        Debug.Log("[BuildController] calling UpdatePlacementHighlights");
+
+        if (selectedBuilding == null) return;
+
+        float radiusTiles = 0f;
+        bool affectsPower = false;
+        bool affectsStorage = false;
+
+        if (selectedBuilding is PowerData pd)
+        {
+            radiusTiles = pd.powerRadiusTiles;
+            affectsPower = true;
+        }
+        else if (selectedBuilding is StorageData sd)
+        {
+            radiusTiles = sd.linkRadiusTiles;
+            affectsStorage = true;
+        }
+        else
+        {
+            return;
+        }
+
+        if (radiusTiles <= 0f) return;
+
+        float radiusWorld = radiusTiles * GameServices.Grid.cellSize;
+        Vector3 center = GameServices.Grid.GridToWorldCenter(originCell);
+
+        int candidates = 0;
+        int lit = 0;
+
+        var buildings = GameServices.Buildings.All;
+        for (int i = 0; i < buildings.Count; i++)
+        {
+            var b = buildings[i];
+            if (b == null || b.data == null) continue;
+
+            // Filter
+            if (affectsPower && b.data.powerDraw <= 0) continue;
+            if (affectsStorage && b.data.category != BuildingCategory.Producer) continue;
+
+            candidates++;
+
+            float d = Vector2.Distance(center, b.transform.position);
+            if (d > radiusWorld) continue;
+
+            var hl = b.GetComponentInChildren<BuildingHighlight>(true);
+            if (hl == null) continue;
+
+            hl.Set(true);
+            _activeHighlights.Add(hl);
+            lit++;
+        }
+
+        Debug.Log($"[Highlights] buildings={buildings.Count}, candidates={candidates}, lit={lit}");
+
+    }
+
+
 
 }

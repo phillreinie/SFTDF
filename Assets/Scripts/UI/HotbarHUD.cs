@@ -44,18 +44,20 @@ public class HotbarHUD : MonoBehaviour
 
         _slots.Clear();
 
-        int count = Mathf.Min(hotbar.buildings.Count, hotbar.maxKeys);
+        var pageList = hotbar.GetBuildingsOnCurrentPage();
+        int count = Mathf.Min(pageList.Count, hotbar.slotsPerPage);
 
         for (int i = 0; i < count; i++)
         {
-            var b = hotbar.buildings[i];
+            var b = pageList[i];
+
             if (b == null) continue;
 
             var slot = Instantiate(slotPrefab, slotParent);
             slot.Bind(i, b, this);
             _slots.Add(slot);
         }
-
+        
         RefreshSelectionVisuals();
     }
 
@@ -69,7 +71,8 @@ public class HotbarHUD : MonoBehaviour
 
         buildController.SetSelected(b);
         GameModeManager.Instance?.SetMode(GameMode.Build);
-
+        
+        hotbar.SelectPageSlot(index);
         RefreshSelectionVisuals();
     }
 

@@ -61,8 +61,7 @@ public class EconomyPanelUI : MonoBehaviour
     private void RefreshUI()
     {
         
-        if (GameServices.Inventory != null)
-            Debug.Log($"[EconomyPanelUI] Inventory instance: {GameServices.Inventory.GetHashCode()}");
+     
 
         if (headerText != null) headerText.text = "ECONOMY";
 
