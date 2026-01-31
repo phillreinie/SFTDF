@@ -38,14 +38,12 @@ public class EconomyPanelUI : MonoBehaviour
 
     private void BuildRows()
     {
-        // clear old
         for (int i = 0; i < _rows.Count; i++)
             if (_rows[i] != null) Destroy(_rows[i].gameObject);
         _rows.Clear();
 
         if (resourceDatabase == null || resourceListRoot == null || resourceRowPrefab == null) return;
 
-        // Ensure DB index built
         resourceDatabase.BuildIndex();
 
         foreach (var res in resourceDatabase.resources)
@@ -60,14 +58,10 @@ public class EconomyPanelUI : MonoBehaviour
 
     private void RefreshUI()
     {
-        
-     
-
         if (headerText != null) headerText.text = "ECONOMY";
 
         if (resourceDatabase != null)
         {
-            // resources shown in the same order as database list
             for (int i = 0; i < resourceDatabase.resources.Count && i < _rows.Count; i++)
             {
                 var res = resourceDatabase.resources[i];
@@ -75,9 +69,15 @@ public class EconomyPanelUI : MonoBehaviour
                 if (res == null || row == null) continue;
 
                 int amount = GameServices.Inventory != null ? GameServices.Inventory.Get(res.id) : 0;
-                float rate = GameServices.Rates != null ? GameServices.Rates.GetNetPerSecond(res.id) : 0f;
+                float rate = GameServices.InventoryRates != null ? GameServices.InventoryRates.GetRatePerSecond(res.id) : 0f;
 
-                row.SetValues(amount, rate);
+
+                // NEW: cap
+                int cap = int.MaxValue;
+                if (GameServices.Inventory != null)
+                    cap = GameServices.Inventory.GetCap(res.id);
+
+                row.SetValues(amount, cap, rate);
             }
         }
 
@@ -117,6 +117,7 @@ public class EconomyPanelUI : MonoBehaviour
         int running = 0;
         int starved = 0;
         int inactive = 0;
+        int blocked = 0; // OPTIONAL: show blocked too (caps cause this now)
 
         var bm = GameServices.Buildings;
         if (bm != null)
@@ -132,12 +133,13 @@ public class EconomyPanelUI : MonoBehaviour
                 {
                     case ProductionState.Running: running++; break;
                     case ProductionState.Starved: starved++; break;
+                    case ProductionState.Blocked: blocked++; break;
                     default: inactive++; break;
                 }
             }
         }
 
         if (producerText != null)
-            producerText.text = $"PRODUCERS: Running {running}  Starved {starved}  Inactive {inactive}";
+            producerText.text = $"PRODUCERS: Running {running}  Starved {starved}  Blocked {blocked}  Inactive {inactive}";
     }
 }

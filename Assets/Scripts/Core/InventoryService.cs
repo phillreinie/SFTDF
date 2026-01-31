@@ -83,7 +83,6 @@ public class InventoryService
 
         _amounts[resourceId] = next;
 
-        TrackDelta(resourceId, appliedDelta);
         OnChanged?.Invoke();
     }
 
@@ -106,7 +105,6 @@ public class InventoryService
         {
             var c = cost[i];
             _amounts[c.resourceId] = Get(c.resourceId) - c.amount;
-            TrackDelta(c.resourceId, -c.amount);
         }
 
         OnChanged?.Invoke();
@@ -121,17 +119,12 @@ public class InventoryService
         if (have < amount) return false;
 
         _amounts[resourceId] = have - amount;
-        TrackDelta(resourceId, -amount);
 
         OnChanged?.Invoke();
         return true;
     }
 
-    private void TrackDelta(string resourceId, int delta)
-    {
-        if (GameServices.Rates == null) return;
-        GameServices.Rates.AddDeltaInt(resourceId, delta);
-    }
+
 
     public IReadOnlyDictionary<string, int> GetAll() => _amounts; // for HUD later
 }

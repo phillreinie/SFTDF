@@ -19,7 +19,6 @@ public class ProductionSystem : MonoBehaviour
         _accum = 0f;
 
         // Reset "current" net rates each tick
-        GameServices.Rates?.Clear();
 
         TickAll(dt);
     }
@@ -172,7 +171,6 @@ public class ProductionSystem : MonoBehaviour
 
     private void ApplyRates(ProducerData pd, float cyclesPerSecondApplied)
     {
-        if (GameServices.Rates == null) return;
 
         var inputs = pd.recipe != null ? pd.recipe.inputs : null;
         var outputs = pd.recipe != null ? pd.recipe.outputs : null;
@@ -182,7 +180,6 @@ public class ProductionSystem : MonoBehaviour
             for (int i = 0; i < inputs.Count; i++)
             {
                 var ra = inputs[i];
-                GameServices.Rates.AddDelta(ra.resourceId, -ra.amount * cyclesPerSecondApplied);
             }
         }
 
@@ -191,7 +188,6 @@ public class ProductionSystem : MonoBehaviour
             for (int i = 0; i < outputs.Count; i++)
             {
                 var ra = outputs[i];
-                GameServices.Rates.AddDelta(ra.resourceId, ra.amount * cyclesPerSecondApplied);
             }
         }
     }

@@ -6,8 +6,10 @@ public static class GameServices
     public static InventoryService Inventory { get; set; }
     public static ResourceDatabase Resources { get; set; }
 
-    public static EconomyRateTracker Rates { get; set; }
+
     public static PlayerStatsService PlayerStats { get; set; }
 
     public static ResourceCapacityService Capacity { get; set; }
+    public static InventoryRateSampler InventoryRates { get; set; }
+
 }

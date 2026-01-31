@@ -25,7 +25,6 @@ public class GameBootstrap : MonoBehaviour
         GameServices.Inventory = new InventoryService();
         GameServices.Inventory.Add(scrapResourceId, startingScrap);
 
-        GameServices.Rates = new EconomyRateTracker(10f);
 
         // NEW: Capacity service (must exist before production ticks clamp to caps)
         GameServices.Capacity = new ResourceCapacityService();
