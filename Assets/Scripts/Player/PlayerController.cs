@@ -3,6 +3,7 @@
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerController : MonoBehaviour
 {
+    [Header("Movement (Base)")]
     public float moveSpeed = 6f;
 
     private Rigidbody2D _rb;
@@ -22,6 +23,13 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        _rb.linearVelocity = _move * moveSpeed;
+        float finalMoveSpeed = GetFinalMoveSpeed();
+        _rb.linearVelocity = _move * finalMoveSpeed;
+    }
+
+    private float GetFinalMoveSpeed()
+    {
+        float bonus = GameServices.PlayerUpgrades != null ? GameServices.PlayerUpgrades.MoveSpeedBonus : 0f;
+        return Mathf.Max(0.1f, moveSpeed + bonus);
     }
 }

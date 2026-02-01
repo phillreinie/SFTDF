@@ -1,9 +1,8 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PlayerWeapon : MonoBehaviour
 {
-    [Header("Weapon")]
+    [Header("Weapon (Base)")]
     public float range = 10f;
     public float damage = 10f;
     public float fireRate = 8f;
@@ -15,7 +14,6 @@ public class PlayerWeapon : MonoBehaviour
     public bool drawDebugRay = true;
 
     private float _cooldown;
-
     private Camera cam;
 
     private void Awake()
@@ -25,21 +23,22 @@ public class PlayerWeapon : MonoBehaviour
 
     private void Update()
     {
+        // Apply upgraded fire rate to cooldown timing
+        float finalFireRate = GetFinalFireRate();
         _cooldown -= Time.deltaTime;
 
         if (Input.GetMouseButton(0) && _cooldown <= 0f)
         {
             Fire();
-            _cooldown = 1f / fireRate;
+            _cooldown = 1f / Mathf.Max(0.01f, finalFireRate);
         }
     }
 
     private void Fire()
     {
-
         if (cam == null) return;
-        AudioService.Instance?.Play(SfxEvent.PlayerShoot);
 
+        AudioService.Instance?.Play(SfxEvent.PlayerShoot);
 
         Vector3 mouseWorld = cam.ScreenToWorldPoint(Input.mousePosition);
         mouseWorld.z = 0f;
@@ -47,16 +46,15 @@ public class PlayerWeapon : MonoBehaviour
         Vector2 origin = transform.position;
         Vector2 dir = ((Vector2)mouseWorld - origin).normalized;
 
-        RaycastHit2D hit = Physics2D.Raycast(origin, dir, range, hitMask);
+        float finalRange = GetFinalRange();
+        float finalDamage = GetFinalDamage();
 
-
+        RaycastHit2D hit = Physics2D.Raycast(origin, dir, finalRange, hitMask);
 
         if (drawDebugRay)
         {
-            Vector2 end = hit.collider != null ? hit.point : origin + dir * range;
+            Vector2 end = hit.collider != null ? hit.point : origin + dir * finalRange;
             LaserVFXService.Instance?.Fire(LaserChannel.Player, origin, end);
-
-
         }
 
         if (hit.collider == null) return;
@@ -68,6 +66,26 @@ public class PlayerWeapon : MonoBehaviour
                 dmg = hit.rigidbody.GetComponent<IDamageable>();
         }
 
-        dmg?.TakeDamage(damage);
+        dmg?.TakeDamage(finalDamage);
+    }
+
+    // ---------------- Upgrades ----------------
+
+    private float GetFinalRange()
+    {
+        float bonus = GameServices.PlayerUpgrades != null ? GameServices.PlayerUpgrades.RadiusBonus : 0f;
+        return Mathf.Max(0.1f, range + bonus);
+    }
+
+    private float GetFinalDamage()
+    {
+        float bonus = GameServices.PlayerUpgrades != null ? GameServices.PlayerUpgrades.DamageBonus : 0f;
+        return Mathf.Max(0f, damage + bonus);
+    }
+
+    private float GetFinalFireRate()
+    {
+        float bonus = GameServices.PlayerUpgrades != null ? GameServices.PlayerUpgrades.FireRateBonus : 0f;
+        return Mathf.Max(0.01f, fireRate + bonus);
     }
 }

@@ -12,6 +12,9 @@ public class GameBootstrap : MonoBehaviour
     [Header("Starting Inventory")]
     public int startingScrap = 200;
     public string scrapResourceId = "res_scrap";
+    
+    // CHANGED: V2-3 (add one line)
+
 
     private void Awake()
     {
@@ -24,7 +27,8 @@ public class GameBootstrap : MonoBehaviour
 
         GameServices.Inventory = new InventoryService();
         GameServices.Inventory.Add(scrapResourceId, startingScrap);
-
+        
+        GameServices.PlayerUpgrades = new PlayerUpgradeService();
 
         // NEW: Capacity service (must exist before production ticks clamp to caps)
         GameServices.Capacity = new ResourceCapacityService();

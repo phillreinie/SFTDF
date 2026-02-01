@@ -11,5 +11,7 @@ public static class GameServices
 
     public static ResourceCapacityService Capacity { get; set; }
     public static InventoryRateSampler InventoryRates { get; set; }
+    
+    public static PlayerUpgradeService PlayerUpgrades { get; set; }
 
 }
